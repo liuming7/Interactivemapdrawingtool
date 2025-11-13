@@ -26,6 +26,13 @@ A single-page web application featuring an interactive OpenStreetMap-based map w
 - **Tiles:** OpenStreetMap.
 - **Optional Backend (future):** Lightweight API for saving/loading projects.
 
+### Installation
+Download or clone the repository:
+```bash
+git clone <your-repo-url>
+cd <project-folder>
+```
+
 ## Running the code
 
 Run `npm i` to install the dependencies.
