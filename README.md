@@ -29,8 +29,7 @@ A single-page web application featuring an interactive OpenStreetMap-based map w
 ### Installation
 Download or clone the repository:
 ```bash
-git clone <your-repo-url>
-cd <project-folder>
+git clone https://github.com/liuming7/Interactivemapdrawingtool.git
 ```
 
 ## Running the code
