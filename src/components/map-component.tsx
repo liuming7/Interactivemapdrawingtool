@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Ruler, Circle, Trash2, Check } from "lucide-react";
@@ -47,152 +47,282 @@ export function MapComponent() {
     if (mapLoaded && mapContainerRef.current && !mapRef.current) {
       // @ts-ignore
       const L = window.L;
-      const map = L.map(mapContainerRef.current).setView([40.7128, -74.0060], 13);
+
+      // 1) 禁用默认 zoomControl
+      const map = L.map(mapContainerRef.current, {
+        zoomControl: false,
+      }).setView([40.7128, -74.0060], 13);
+
+      // 2) 自己加一个在右上的缩放控件
+      L.control
+        .zoom({
+          position: "bottomright",
+        })
+        .addTo(map);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
 
       mapRef.current = map;
-
-      // Handle map clicks for drawing
-      map.on("click", (e: any) => {
-        if (drawingMode) {
-          handleMapClick(e.latlng);
-        }
-      });
     }
   }, [mapLoaded]);
 
-  const handleMapClick = (latlng: any) => {
-    // @ts-ignore
-    const L = window.L;
-    const point: [number, number] = [latlng.lat, latlng.lng];
+  // const handleMapClick = (latlng: any) => {
+  //   // @ts-ignore
+  //   const L = window.L;
+  //   const point: [number, number] = [latlng.lat, latlng.lng];
 
-    if (drawingMode === "polyline") {
-      const newPoints = [...currentPoints, point];
-      setCurrentPoints(newPoints);
+  //   if (drawingMode === "polyline") {
+  //     const newPoints = [...currentPoints, point];
+  //     setCurrentPoints(newPoints);
 
-      // Add marker
-      const marker = L.circleMarker(latlng, {
-        radius: 5,
-        fillColor: "#8b5cf6",
-        color: "#fff",
-        weight: 2,
-        fillOpacity: 0.8
-      }).addTo(mapRef.current);
-      markersRef.current.push(marker);
+  //     // Add marker
+  //     const marker = L.circleMarker(latlng, {
+  //       radius: 5,
+  //       fillColor: "#8b5cf6",
+  //       color: "#fff",
+  //       weight: 2,
+  //       fillOpacity: 0.8
+  //     }).addTo(mapRef.current);
+  //     markersRef.current.push(marker);
 
-      // Draw temporary polyline
-      if (tempPolylineRef.current) {
-        tempPolylineRef.current.remove();
-      }
-      if (newPoints.length > 1) {
-        tempPolylineRef.current = L.polyline(newPoints, {
-          color: "#8b5cf6",
-          weight: 3,
-          dashArray: "5, 5"
+  //     // Draw temporary polyline
+  //     if (tempPolylineRef.current) {
+  //       tempPolylineRef.current.remove();
+  //     }
+  //     if (newPoints.length > 1) {
+  //       tempPolylineRef.current = L.polyline(newPoints, {
+  //         color: "#8b5cf6",
+  //         weight: 3,
+  //         dashArray: "5, 5"
+  //       }).addTo(mapRef.current);
+  //     }
+  //   } else if (drawingMode === "line") {
+  //     const newPoints = [...currentPoints, point];
+  //     setCurrentPoints(newPoints);
+
+  //     // Add marker
+  //     const marker = L.circleMarker(latlng, {
+  //       radius: 5,
+  //       fillColor: "#3b82f6",
+  //       color: "#fff",
+  //       weight: 2,
+  //       fillOpacity: 0.8
+  //     }).addTo(mapRef.current);
+  //     markersRef.current.push(marker);
+
+  //     // If we have 2 points, create the line
+  //     if (newPoints.length === 2) {
+  //       const distance = calculateDistance(newPoints[0], newPoints[1]);
+  //       const shape: DrawingShape = {
+  //         id: Date.now().toString(),
+  //         type: "line",
+  //         points: newPoints,
+  //         distance
+  //       };
+
+  //       // Draw line on map
+  //       const polyline = L.polyline(newPoints, {
+  //         color: "#3b82f6",
+  //         weight: 3
+  //       }).addTo(mapRef.current);
+
+  //       // Add distance label
+  //       const midPoint = [
+  //         (newPoints[0][0] + newPoints[1][0]) / 2,
+  //         (newPoints[0][1] + newPoints[1][1]) / 2
+  //       ];
+  //       const tooltip = L.tooltip({
+  //         permanent: true,
+  //         direction: "center",
+  //         className: "distance-label"
+  //       })
+  //         .setLatLng(midPoint as [number, number])
+  //         .setContent(`${(distance / 1000).toFixed(2)} km`)
+  //         .addTo(mapRef.current);
+
+  //       shapesLayerRef.current.push(polyline, tooltip);
+  //       setShapes([...shapes, shape]);
+  //       setCurrentPoints([]);
+  //       setDrawingMode(null);
+  //     }
+  //   } else if (drawingMode === "circle") {
+  //     const newPoints = [...currentPoints, point];
+  //     setCurrentPoints(newPoints);
+
+  //     // Add marker
+  //     const marker = L.circleMarker(latlng, {
+  //       radius: 5,
+  //       fillColor: "#10b981",
+  //       color: "#fff",
+  //       weight: 2,
+  //       fillOpacity: 0.8
+  //     }).addTo(mapRef.current);
+  //     markersRef.current.push(marker);
+
+  //     // If we have 2 points, create the circle
+  //     if (newPoints.length === 2) {
+  //       const radius = calculateDistance(newPoints[0], newPoints[1]);
+  //       const shape: DrawingShape = {
+  //         id: Date.now().toString(),
+  //         type: "circle",
+  //         points: newPoints,
+  //         distance: 2 * Math.PI * radius, // Circumference
+  //         radius
+  //       };
+
+  //       // Draw circle on map
+  //       const circle = L.circle(newPoints[0], {
+  //         color: "#10b981",
+  //         fillColor: "#10b981",
+  //         fillOpacity: 0.2,
+  //         radius: radius
+  //       }).addTo(mapRef.current);
+
+  //       // Add radius label
+  //       const tooltip = L.tooltip({
+  //         permanent: true,
+  //         direction: "center",
+  //         className: "distance-label"
+  //       })
+  //         .setLatLng(newPoints[0])
+  //         .setContent(`Radius: ${(radius / 1000).toFixed(2)} km<br>Circumference: ${(shape.distance / 1000).toFixed(2)} km`)
+  //         .addTo(mapRef.current);
+
+  //       shapesLayerRef.current.push(circle, tooltip);
+  //       setShapes([...shapes, shape]);
+  //       setCurrentPoints([]);
+  //       setDrawingMode(null);
+  //     }
+  //   }
+  // };
+
+  const handleMapClick = useCallback(
+    (latlng: any) => {
+      // @ts-ignore
+      const L = window.L;
+      const point: [number, number] = [latlng.lat, latlng.lng];
+
+      if (drawingMode === "polyline") {
+        const newPoints = [...currentPoints, point];
+        setCurrentPoints(newPoints);
+
+        const marker = L.circleMarker(latlng, {
+          radius: 5,
+          fillColor: "#8b5cf6",
+          color: "#fff",
+          weight: 2,
+          fillOpacity: 0.8,
         }).addTo(mapRef.current);
-      }
-    } else if (drawingMode === "line") {
-      const newPoints = [...currentPoints, point];
-      setCurrentPoints(newPoints);
+        markersRef.current.push(marker);
 
-      // Add marker
-      const marker = L.circleMarker(latlng, {
-        radius: 5,
-        fillColor: "#3b82f6",
-        color: "#fff",
-        weight: 2,
-        fillOpacity: 0.8
-      }).addTo(mapRef.current);
-      markersRef.current.push(marker);
+        if (tempPolylineRef.current) {
+          tempPolylineRef.current.remove();
+        }
+        if (newPoints.length > 1) {
+          tempPolylineRef.current = L.polyline(newPoints, {
+            color: "#8b5cf6",
+            weight: 3,
+            dashArray: "5, 5",
+          }).addTo(mapRef.current);
+        }
+      } else if (drawingMode === "line") {
+        const newPoints = [...currentPoints, point];
+        setCurrentPoints(newPoints);
 
-      // If we have 2 points, create the line
-      if (newPoints.length === 2) {
-        const distance = calculateDistance(newPoints[0], newPoints[1]);
-        const shape: DrawingShape = {
-          id: Date.now().toString(),
-          type: "line",
-          points: newPoints,
-          distance
-        };
-
-        // Draw line on map
-        const polyline = L.polyline(newPoints, {
-          color: "#3b82f6",
-          weight: 3
+        const marker = L.circleMarker(latlng, {
+          radius: 5,
+          fillColor: "#3b82f6",
+          color: "#fff",
+          weight: 2,
+          fillOpacity: 0.8,
         }).addTo(mapRef.current);
+        markersRef.current.push(marker);
 
-        // Add distance label
-        const midPoint = [
-          (newPoints[0][0] + newPoints[1][0]) / 2,
-          (newPoints[0][1] + newPoints[1][1]) / 2
-        ];
-        const tooltip = L.tooltip({
-          permanent: true,
-          direction: "center",
-          className: "distance-label"
-        })
-          .setLatLng(midPoint as [number, number])
-          .setContent(`${(distance / 1000).toFixed(2)} km`)
-          .addTo(mapRef.current);
+        if (newPoints.length === 2) {
+          const distance = calculateDistance(newPoints[0], newPoints[1]);
+          const shape: DrawingShape = {
+            id: Date.now().toString(),
+            type: "line",
+            points: newPoints,
+            distance,
+          };
 
-        shapesLayerRef.current.push(polyline, tooltip);
-        setShapes([...shapes, shape]);
-        setCurrentPoints([]);
-        setDrawingMode(null);
-      }
-    } else if (drawingMode === "circle") {
-      const newPoints = [...currentPoints, point];
-      setCurrentPoints(newPoints);
+          const polyline = L.polyline(newPoints, {
+            color: "#3b82f6",
+            weight: 3,
+          }).addTo(mapRef.current);
 
-      // Add marker
-      const marker = L.circleMarker(latlng, {
-        radius: 5,
-        fillColor: "#10b981",
-        color: "#fff",
-        weight: 2,
-        fillOpacity: 0.8
-      }).addTo(mapRef.current);
-      markersRef.current.push(marker);
+          const midPoint = [
+            (newPoints[0][0] + newPoints[1][0]) / 2,
+            (newPoints[0][1] + newPoints[1][1]) / 2,
+          ];
+          const tooltip = L.tooltip({
+            permanent: true,
+            direction: "center",
+            className: "distance-label",
+          })
+            .setLatLng(midPoint as [number, number])
+            .setContent(`${(distance / 1000).toFixed(2)} km`)
+            .addTo(mapRef.current);
 
-      // If we have 2 points, create the circle
-      if (newPoints.length === 2) {
-        const radius = calculateDistance(newPoints[0], newPoints[1]);
-        const shape: DrawingShape = {
-          id: Date.now().toString(),
-          type: "circle",
-          points: newPoints,
-          distance: 2 * Math.PI * radius, // Circumference
-          radius
-        };
+          shapesLayerRef.current.push(polyline, tooltip);
+          setShapes((prev) => [...prev, shape]);
+          setCurrentPoints([]);
+          setDrawingMode(null);
+        }
+      } else if (drawingMode === "circle") {
+        const newPoints = [...currentPoints, point];
+        setCurrentPoints(newPoints);
 
-        // Draw circle on map
-        const circle = L.circle(newPoints[0], {
-          color: "#10b981",
+        const marker = L.circleMarker(latlng, {
+          radius: 5,
           fillColor: "#10b981",
-          fillOpacity: 0.2,
-          radius: radius
+          color: "#fff",
+          weight: 2,
+          fillOpacity: 0.8,
         }).addTo(mapRef.current);
+        markersRef.current.push(marker);
 
-        // Add radius label
-        const tooltip = L.tooltip({
-          permanent: true,
-          direction: "center",
-          className: "distance-label"
-        })
-          .setLatLng(newPoints[0])
-          .setContent(`Radius: ${(radius / 1000).toFixed(2)} km<br>Circumference: ${(shape.distance / 1000).toFixed(2)} km`)
-          .addTo(mapRef.current);
+        if (newPoints.length === 2) {
+          const radius = calculateDistance(newPoints[0], newPoints[1]);
+          const shape: DrawingShape = {
+            id: Date.now().toString(),
+            type: "circle",
+            points: newPoints,
+            distance: 2 * Math.PI * radius,
+            radius,
+          };
 
-        shapesLayerRef.current.push(circle, tooltip);
-        setShapes([...shapes, shape]);
-        setCurrentPoints([]);
-        setDrawingMode(null);
+          const circle = L.circle(newPoints[0], {
+            color: "#10b981",
+            fillColor: "#10b981",
+            fillOpacity: 0.2,
+            radius,
+          }).addTo(mapRef.current);
+
+          const tooltip = L.tooltip({
+            permanent: true,
+            direction: "center",
+            className: "distance-label",
+          })
+            .setLatLng(newPoints[0])
+            .setContent(
+              `Radius: ${(radius / 1000).toFixed(2)} km<br>Circumference: ${(shape.distance / 1000).toFixed(2)} km`
+            )
+            .addTo(mapRef.current);
+
+          shapesLayerRef.current.push(circle, tooltip);
+          setShapes((prev) => [...prev, shape]);
+          setCurrentPoints([]);
+          setDrawingMode(null);
+        }
       }
-    }
-  };
+    },
+    [drawingMode, currentPoints, setCurrentPoints, setShapes]
+  );
 
   const calculateDistance = (point1: [number, number], point2: [number, number]): number => {
     // Haversine formula to calculate distance between two points in meters
@@ -296,7 +426,7 @@ export function MapComponent() {
       .addTo(mapRef.current);
 
     shapesLayerRef.current.push(polyline, tooltip);
-    setShapes([...shapes, shape]);
+    setShapes(prev => [...prev, shape]);
     setCurrentPoints([]);
     setDrawingMode(null);
   };
@@ -358,6 +488,23 @@ export function MapComponent() {
     });
     return total;
   };
+
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current) return;
+
+    const map = mapRef.current;
+
+    const clickHandler = (e: any) => {
+      handleMapClick(e.latlng);
+    };
+
+    map.on("click", clickHandler);
+
+    // 清理：每次 handleMapClick 变了，先解绑旧的，再绑新的
+    return () => {
+      map.off("click", clickHandler);
+    };
+  }, [mapLoaded, handleMapClick]);
 
   return (
     <div className="relative w-full h-full">
