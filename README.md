@@ -11,13 +11,15 @@ A single-page web application featuring an interactive OpenStreetMap-based map w
 - Draw circles by selecting a center and defining a radius.
 - Automatic calculations:
   - Line distance
+  - Multi-line distance
   - Circle radius
   - Circle circumference
-- Measurements displayed on-map and in a side panel (kilometers by default).
+- Measurements displayed on the map and in a side panel (kilometers by default).
 - Uses OpenStreetMap tiles and standard browser technologies (HTML/JS/CSS).
 
 ### User Interface
-- “Draw Line” button for multi-point distance measurement.
+- “Draw Line” button for a pair of point distance measurement.
+- "Draw Multi-line" button for multi-point distance measurement.
 - “Draw Circle” button for radius measurement.
 - Clear-all/reset control.
 - Responsive layout suitable for desktop and tablet.
@@ -26,7 +28,6 @@ A single-page web application featuring an interactive OpenStreetMap-based map w
 - **Frontend:** HTML5, JavaScript, CSS.
 - **Map Library:** Leaflet or MapLibre GL.
 - **Tiles:** OpenStreetMap.
-- **Optional Backend (future):** Lightweight API for saving/loading projects.
 
 ### Installation
 Download or clone the repository:
