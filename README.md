@@ -2,7 +2,7 @@
 
 A single-page web application featuring an interactive OpenStreetMap-based map with built-in measurement tools. Users can draw lines and circles directly on the map to measure distances and radii in real time. All measurements appear on the map and in a side panel.
 
-![Alt text](image-url "Optional title")
+![Drive around in Manhattan](https://github.com/liuming7/Interactivemapdrawingtool/blob/main/Screenshot%202025-12-04%20174126.png "Drive around in Manhattan")
 
 ## Features
 
